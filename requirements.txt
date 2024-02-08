@@ -1,0 +1,10 @@
+psycopg2-binary
+fastapi
+uvicorn[standart]
+pydantic<2.0.0
+sqlalchemy
+alembic
+sqlmodel
+Celery
+redis
+flower

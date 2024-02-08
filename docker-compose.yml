@@ -1,0 +1,102 @@
+version: "3.1"
+
+services:
+  postgres:
+    image: postgres
+    restart: always
+    environment:
+      POSTGRES_DB: db
+      POSTGRES_USER: db
+      POSTGRES_PASSWORD: db
+    container_name: postgres
+    ports:
+      - 5432:5432
+
+  adminer:
+    image: adminer
+    restart: always
+    ports:
+        - 8080:8080
+
+  fastapi:
+    build: .
+    container_name: fastapi
+    depends_on: 
+        - postgres
+    command: uvicorn src.main:app --reload --host 0.0.0.0 --port 8000
+    restart: always
+    ports:
+      - 8000:8000
+    volumes: 
+      - .:/fastapi
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: rabbitmq_user
+      RABBITMQ_DEFAULT_PASS: rabbitmq_password
+    ports:
+      - 5672:5672
+      - 15672:15672
+
+  redis:
+    image: redis:latest
+    ports:
+      - 6379:6379
+
+  worker_test_add:
+    build: .
+    container_name: worker_test_add
+    command: celery -A celery_service worker -Q myadd -n worker@worker_test_add --loglevel=INFO
+    restart: always
+    ports:
+      - 8001:8001
+    volumes: 
+      - .:/fastapi
+    depends_on: 
+        - fastapi
+        - redis
+        - rabbitmq
+
+  worker_test_mul:
+    build: .
+    container_name: worker_test_mul
+    command: celery -A celery_service worker -Q mymul -n worker@worker_test_mul --loglevel=INFO
+    restart: always
+    ports:
+      - 8002:8002
+    volumes: 
+      - .:/fastapi
+    depends_on: 
+        - fastapi
+        - redis
+        - rabbitmq
+
+  worker_beat:
+    build: .
+    container_name: worker_beat
+    command: celery -A celery_service beat --loglevel=INFO
+    restart: always
+    ports:
+      - 8003:8003
+    volumes: 
+      - .:/fastapi
+    depends_on: 
+        - fastapi
+        - redis
+        - rabbitmq
+
+  monitoring:
+    build: .
+    container_name: monitoring
+    command: celery -A celery_service flower
+    restart: always
+    ports:
+      - 5555:5555
+    volumes: 
+      - .:/fastapi
+    depends_on: 
+        - fastapi
+        - redis
+        - rabbitmq
