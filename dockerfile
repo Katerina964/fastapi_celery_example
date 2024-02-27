@@ -1,5 +1,5 @@
 FROM python:3.9
-WORKDIR /fastapi
+WORKDIR /fastapi_celery_example
 COPY requirements.txt .
 RUN pip install --upgrade pip && pip install -r requirements.txt
-COPY . /fastapi
+COPY . /fastapi_celery_example
